@@ -902,14 +902,13 @@ def prepare(element_html, data):
 
     _validate_signals(signals, answers_name)
 
-    for sig in signals:
-        if not sig.get("editable", False):
-            continue
-        for cell in _editable_cells(sig, answers_name):
-            key = cell["key"]
-            if key in data["correct_answers"]:
-                raise Exception(f"pl-waveform: duplicate correct_answers key '{key}'")
-            data["correct_answers"][key] = cell["correct_value"]
+    data["correct_answers"][answers_name] = {
+        sig["signal_key"]: [
+            cell["correct_value"] for cell in _editable_cells(sig, answers_name)
+        ]
+        for sig in signals
+        if sig.get("editable", False)
+    }
 
 
 def _question_editable_rows(
@@ -1386,14 +1385,18 @@ def grade(element_html, data):
     for sig in signals:
         if not sig.get("editable", False):
             continue
+        sig_correct_answers = data["correct_answers"].get(answers_name, {}).get(
+            sig["signal_key"], []
+        )
         for cell in _editable_cells(sig, answers_name):
             key = cell["key"]
             if key in data.get("format_errors", {}):
                 continue
 
-            a_tru = pl.from_json(data["correct_answers"].get(key, None))
-            if a_tru is None:
+            cycle_idx = cell["editable_index"] - 1
+            if cycle_idx >= len(sig_correct_answers):
                 continue
+            a_tru = pl.from_json(sig_correct_answers[cycle_idx])
 
             a_sub = data["submitted_answers"].get(key, None)
             if a_sub is None:
