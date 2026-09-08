@@ -901,6 +901,11 @@ def prepare(element_html, data):
             )
 
     _validate_signals(signals, answers_name)
+    
+    if answers_name in data["correct_answers"]:
+        raise Exception(
+            f"pl-waveform: duplicate correct_answers variable name '{answers_name}'"
+        )
 
     data["correct_answers"][answers_name] = {
         sig["signal_key"]: [
